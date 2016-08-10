@@ -500,6 +500,58 @@ class Configuration
     }
 
     /**
+     * Returns path to a given directory relative to your project.
+     * @param string $path
+     * @return string
+     */
+    public static function getRelativeDir($path)
+    {
+        $relPath = $path;
+        if (substr($path, 0, strlen(self::projectDir())) == self::projectDir()) {
+            $relPath = substr($path, strlen(self::projectDir()));
+        } else {
+            $pathPrefix = self::projectDir();
+            $sameAbsoluteness = true;
+            $rootPathIndex = 0;
+            if (DIRECTORY_SEPARATOR == '\\') {
+                $hasDriveSpecifier = preg_match('/^[A-Za-z]:/', $pathPrefix);
+                $sameAbsoluteness = (preg_match('/^[A-Za-z]:/', $pathPrefix) == preg_match('/^[A-Za-z]:/', $path));
+                $rootPathIndex = $hasDriveSpecifier ? 2 : 0;
+                if ($sameAbsoluteness && $hasDriveSpecifier && preg_match('/^[A-Za-z]:/', $pathPrefix)) {
+                    $sameAbsoluteness = ($pathPrefix[0] == $path[0]);
+                }
+            }
+            if ($sameAbsoluteness) {
+                $sameAbsoluteness =
+                    (($pathPrefix[$rootPathIndex] == DIRECTORY_SEPARATOR) ==
+                     ($path[$rootPathIndex]       == DIRECTORY_SEPARATOR));
+                $rootPathIndex += ($pathPrefix[$rootPathIndex] == DIRECTORY_SEPARATOR) ? 1 : 0;
+            }
+            if ($sameAbsoluteness) {
+                $relPath = substr($path, $rootPathIndex);
+                $pathPrefix = substr($pathPrefix, $rootPathIndex);
+                $basePathArr = explode(DIRECTORY_SEPARATOR, $pathPrefix);
+                while (
+                    count($basePathArr) &&
+                    (($basePathArr[0] . DIRECTORY_SEPARATOR) == substr($relPath, 0, strlen($basePathArr[0])+1))
+                ) {
+                    $relPath = substr($relPath, strlen($basePathArr[0])+1);
+                    array_shift($basePathArr);
+                }
+                while (count($basePathArr)) {
+                    $dirName = array_pop($basePathArr);
+                    if ($dirName != '') {
+                        $relPath = '..' . DIRECTORY_SEPARATOR . $relPath;
+                    }
+                }
+            } else {
+                $relPath = $path;
+            }
+        }
+        return $relPath;
+    }
+
+    /**
      * Returns path to tests directory
      *
      * @return string
