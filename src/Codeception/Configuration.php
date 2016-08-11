@@ -403,8 +403,8 @@ class Configuration
     {
         return array_filter(
             array_map(
-                function ($m) {
-                    return is_array($m) ? key($m) : $m;
+                function ($v, $k) {
+                    return is_array($v) ? $k : $v;
                 },
                 $settings['modules']['enabled'],
                 array_keys($settings['modules']['enabled'])
