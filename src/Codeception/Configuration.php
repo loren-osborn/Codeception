@@ -506,49 +506,87 @@ class Configuration
      */
     public static function getRelativeDir($path)
     {
-        $relPath = $path;
+        // if $path is a within self::projectDir()
         if (substr($path, 0, strlen(self::projectDir())) == self::projectDir()) {
-            $relPath = substr($path, strlen(self::projectDir()));
-        } else {
-            $pathPrefix = self::projectDir();
-            $sameAbsoluteness = true;
-            $rootPathIndex = 0;
-            if (DIRECTORY_SEPARATOR == '\\') {
-                $hasDriveSpecifier = preg_match('/^[A-Za-z]:/', $pathPrefix);
-                $sameAbsoluteness = (preg_match('/^[A-Za-z]:/', $pathPrefix) == preg_match('/^[A-Za-z]:/', $path));
-                $rootPathIndex = $hasDriveSpecifier ? 2 : 0;
-                if ($sameAbsoluteness && $hasDriveSpecifier && preg_match('/^[A-Za-z]:/', $pathPrefix)) {
-                    $sameAbsoluteness = ($pathPrefix[0] == $path[0]);
-                }
-            }
-            if ($sameAbsoluteness) {
-                $sameAbsoluteness =
-                    (($pathPrefix[$rootPathIndex] == DIRECTORY_SEPARATOR) ==
-                     ($path[$rootPathIndex]       == DIRECTORY_SEPARATOR));
-                $rootPathIndex += ($pathPrefix[$rootPathIndex] == DIRECTORY_SEPARATOR) ? 1 : 0;
-            }
-            if ($sameAbsoluteness) {
-                $relPath = substr($path, $rootPathIndex);
-                $pathPrefix = substr($pathPrefix, $rootPathIndex);
-                $basePathArr = explode(DIRECTORY_SEPARATOR, $pathPrefix);
-                while (
-                    count($basePathArr) &&
-                    (($basePathArr[0] . DIRECTORY_SEPARATOR) == substr($relPath, 0, strlen($basePathArr[0])+1))
-                ) {
-                    $relPath = substr($relPath, strlen($basePathArr[0])+1);
-                    array_shift($basePathArr);
-                }
-                while (count($basePathArr)) {
-                    $dirName = array_pop($basePathArr);
-                    if ($dirName != '') {
-                        $relPath = '..' . DIRECTORY_SEPARATOR . $relPath;
-                    }
-                }
-            } else {
-                $relPath = $path;
+            // simply chop it off the front
+            return substr($path, strlen(self::projectDir()));
+        }
+        // Identify any absoluteness prefix (like '/' in Unix or "C:\\" in Windows)
+        $pathAbsPrefix    = self::getPathAbsolutenessPrefix($path);
+        $projDirAbsPrefix = self::getPathAbsolutenessPrefix(self::projectDir());
+        $sameAbsoluteness = ($pathAbsPrefix == $projDirAbsPrefix);
+        if (!$sameAbsoluteness) {
+            // if the self::projectDir() and $path aren't relative to the same
+            // thing, we can't make a relative path:
+            // Return the input unaltered
+            return $path;
+        }
+        // peel off optional absoluteness prefixes
+        $relPath         = substr($path,              strlen(   $pathAbsPrefix));
+        $relProjDir      = substr(self::projectDir(), strlen($projDirAbsPrefix));
+        $relProjDirParts = explode(DIRECTORY_SEPARATOR, $relProjDir);
+        // While there are any, peel off any common parent directories
+        // from the beginning of the self::projectDir() and $path
+        while (
+            (count($relProjDirParts) > 0) &&
+            (($relProjDirParts[0] . DIRECTORY_SEPARATOR) == substr($relPath, 0, strlen($relProjDirParts[0])+1))
+        ) {
+            $relPath = substr($relPath, strlen($relProjDirParts[0])+1);
+            array_shift($relProjDirParts);
+        }
+        // prefix $relPath with '../' for all remaining unmatched self::projectDir()
+        // subdirectories
+        while (count($relProjDirParts)) {
+            $dirName = array_pop($relProjDirParts);
+            if ($dirName != '') { // Just in case self::projectDir() ends with DIRECTORY_SEPARATOR
+                $relPath = '..' . DIRECTORY_SEPARATOR . $relPath;
             }
         }
         return $relPath;
+    }
+
+    /**
+     * Are we in a Windows style filesystem?
+     *
+     * @return bool
+     */
+    private static function isWindows()
+    {
+        return (DIRECTORY_SEPARATOR == '\\');
+    }
+
+    /**
+     * What part of this path (leftmost 0-3 characters) what
+     * it is absolute relative to:
+     *
+     * On Unix:
+     *     This is simply '/' for an absolute path or
+     *     '' for a relative path
+     *
+     * On Windows this is more complicated:
+     *     If the first two characters are a letter followed
+     *         by a ':', this indicates that the path is
+     *         on a specific device.
+     *     With or without a device specified, a path MAY
+     *         start with a '\\' to indicate an absolute path
+     *         on the device or '' to indicate a path relative
+     *         to the device's CWD
+     *
+     * @param string $path
+     * @return string
+     */
+    private static function getPathAbsolutenessPrefix($path)
+    {
+        if (self::isWindows()) {
+            $matches = [];
+            if (!preg_match('/^([A-Za-z]:)?\\\\?/', $path, $matches)) {
+                // This should match, even if it matches 0 characters
+                throw new ConfigurationException("INTERNAL ERROR: This must be a regex problem.");
+            }
+            return $matches[0]; // The optional device letter followed by the optional '\\'
+        } else {
+            return ($path[0] == '/') ? '/' : '';
+        }
     }
 
     /**
