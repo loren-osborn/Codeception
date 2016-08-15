@@ -80,6 +80,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
                 // projectDir() with & without trailing directory seperator: actual subdir
                     ['/my/proj/path/some/file/in/my/proj.txt',           '/my/proj/path/',               '/',  'some/file/in/my/proj.txt'],
                     ['/my/proj/path/some/file/in/my/proj.txt',           '/my/proj/path',                '/',  'some/file/in/my/proj.txt'],
+                    ['/my/proj/pathsome/file/in/my/proj.txt',            '/my/proj/path',                '/',  '../pathsome/file/in/my/proj.txt'],
                 // Case sensitive:
                     ['/my/proj/Path/some/file/in/my/proj.txt',           '/my/proj/path/',               '/',  '../Path/some/file/in/my/proj.txt'],
                     ['/my/Proj/path/some/file/in/my/proj.txt',           '/my/proj/path',                '/',  '../../Proj/path/some/file/in/my/proj.txt'],
@@ -101,6 +102,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
                 // projectDir() with & without trailing directory seperator: actual subdir
                     ['C:\\my\\proj\\path\\some\\file\\in\\my\\proj.txt', 'C:\\my\\proj\\path\\',         '\\', 'some\\file\\in\\my\\proj.txt'],
                     ['C:\\my\\proj\\path\\some\\file\\in\\my\\proj.txt', 'C:\\my\\proj\\path',           '\\', 'some\\file\\in\\my\\proj.txt'],
+                    ['C:\\my\\proj\\pathsome\\file\\in\\my\\proj.txt',   'C:\\my\\proj\\path',           '\\', '..\\pathsome\\file\\in\\my\\proj.txt'],
                 // No device letter... absoluteness mismatch
                     ['\\my\\proj\\path\\some\\file\\in\\my\\proj.txt',   'my\\proj\\path\\',             '\\',  '\\my\\proj\\path\\some\\file\\in\\my\\proj.txt'],
                     ['my\\proj\\path\\some\\file\\in\\my\\proj.txt',     '\\my\\proj\\path\\',           '\\',  'my\\proj\\path\\some\\file\\in\\my\\proj.txt'],
