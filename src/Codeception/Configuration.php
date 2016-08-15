@@ -616,7 +616,7 @@ class Configuration
     {
         $devLetterPrefixPattern = '';
         if (self::isWindows($dirSep)) {
-            $devLetterPrefixPattern = '([A-Za-z]:)?';
+            $devLetterPrefixPattern = '([A-Za-z]:|)';
         }
         $matches = [];
         if (!preg_match('/^'.$devLetterPrefixPattern.preg_quote($dirSep, '/').'?/', $path, $matches)) {

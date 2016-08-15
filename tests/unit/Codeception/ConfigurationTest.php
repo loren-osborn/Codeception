@@ -85,7 +85,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
                     ['/my/proj/Path/some/file/in/my/proj.txt',           '/my/proj/path/',               '/',  '../Path/some/file/in/my/proj.txt'],
                     ['/my/Proj/path/some/file/in/my/proj.txt',           '/my/proj/path',                '/',  '../../Proj/path/some/file/in/my/proj.txt'],
                     ['My/proj/path/some/file/in/my/proj.txt',            'my/proj/path/foo/bar',         '/',  '../../../../../My/proj/path/some/file/in/my/proj.txt'],
-                    ['/my/proj/path/some/file/in/my/proj.txt',           '/my/proj/Path/foobar/',        '/',  '../../Path/some/file/in/my/proj.txt'],
+                    ['/my/proj/path/some/file/in/my/proj.txt',           '/my/proj/Path/foobar/',        '/',  '../../path/some/file/in/my/proj.txt'],
                     ['/my/PROJ/path/some/dir/in/my/proj/',               '/my/proj/path/foobar/',        '/',  '../../../PROJ/path/some/dir/in/my/proj/'],
                 // Absolute $path, Relative projectDir()
                     ['/my/proj/path/some/file/in/my/proj.txt',           'my/proj/path/',                '/',  '/my/proj/path/some/file/in/my/proj.txt'],
