@@ -504,45 +504,50 @@ class Configuration
      * @param string $path
      * @return string
      */
-    public static function getRelativeDir($path)
+    public static function getRelativeDir($path, $projDir, $dirSep =  DIRECTORY_SEPARATOR)
     {
-        // if $path is a within self::projectDir()
-        if (substr($path, 0, strlen(self::projectDir())) == self::projectDir()) {
+        // ensure $projDir ends with a trailing $dirSep
+        $projDir = preg_replace('/'.preg_quote($dirSep, '/').'*$/', $dirSep, $projDir);
+        // if $path is a within $projDir
+        if (substr($path, 0, strlen($projDir)) == $projDir) {
             // simply chop it off the front
-            return substr($path, strlen(self::projectDir()));
+            return substr($path, strlen($projDir));
         }
         // Identify any absoluteness prefix (like '/' in Unix or "C:\\" in Windows)
-        $pathAbsPrefix    = self::getPathAbsolutenessPrefix($path);
-        $projDirAbsPrefix = self::getPathAbsolutenessPrefix(self::projectDir());
+        $pathAbsPrefix    = self::getPathAbsolutenessPrefix($path,    $dirSep);
+        $projDirAbsPrefix = self::getPathAbsolutenessPrefix($projDir, $dirSep);
         $sameAbsoluteness = ($pathAbsPrefix == $projDirAbsPrefix);
         if (!$sameAbsoluteness) {
-            // if the self::projectDir() and $path aren't relative to the same
+            // if the $projDir and $path aren't relative to the same
             // thing, we can't make a relative path:
             // Return the input unaltered
             return $path;
         }
-        // peel off optional absoluteness prefixes
-        $relPath         = substr($path,              strlen(   $pathAbsPrefix));
-        $relProjDir      = substr(self::projectDir(), strlen($projDirAbsPrefix));
-        $relProjDirParts = explode(DIRECTORY_SEPARATOR, $relProjDir);
+        // peel off optional absoluteness prefixes and convert
+        // $path and $projDir to an subdirectory path array
+        $relPathParts = array_filter(
+            explode($dirSep, substr($path,    strlen($pathAbsPrefix))),
+            'strlen');
+        $relProjDirParts = array_filter(
+            explode($dirSep, substr($projDir, strlen($projDirAbsPrefix))),
+            'strlen');
         // While there are any, peel off any common parent directories
-        // from the beginning of the self::projectDir() and $path
+        // from the beginning of the $projDir and $path
         while (
+            (count($relPathParts)    > 0) &&
             (count($relProjDirParts) > 0) &&
-            (($relProjDirParts[0] . DIRECTORY_SEPARATOR) == substr($relPath, 0, strlen($relProjDirParts[0])+1))
+            ($relPathParts[0] == $relProjDirParts[0])
         ) {
-            $relPath = substr($relPath, strlen($relProjDirParts[0])+1);
+            array_shift($relPathParts);
             array_shift($relProjDirParts);
         }
-        // prefix $relPath with '../' for all remaining unmatched self::projectDir()
+        // prefix $relPath with '..' for all remaining unmatched $projDir
         // subdirectories
-        while (count($relProjDirParts)) {
-            $dirName = array_pop($relProjDirParts);
-            if ($dirName != '') { // Just in case self::projectDir() ends with DIRECTORY_SEPARATOR
-                $relPath = '..' . DIRECTORY_SEPARATOR . $relPath;
-            }
-        }
-        return $relPath;
+        $parentDirPrefixArr = array_fill(0, count($relProjDirParts), '..');
+        // only append a trailing seperator if one is already present
+        $trailingSep = preg_match('/'.preg_quote($dirSep, '/').'$/', $path) ? $dirSep : '';
+        // convert array of dir paths back into a string path
+        return implode($dirSep, array_merge($parentDirPrefixArr, $relPathParts)).$trailingSep;
     }
 
     /**
@@ -550,9 +555,9 @@ class Configuration
      *
      * @return bool
      */
-    private static function isWindows()
+    private static function isWindows($dirSep =  DIRECTORY_SEPARATOR)
     {
-        return (DIRECTORY_SEPARATOR == '\\');
+        return ($dirSep == '\\');
     }
 
     /**
@@ -575,18 +580,18 @@ class Configuration
      * @param string $path
      * @return string
      */
-    private static function getPathAbsolutenessPrefix($path)
+    private static function getPathAbsolutenessPrefix($path, $dirSep =  DIRECTORY_SEPARATOR)
     {
-        if (self::isWindows()) {
-            $matches = [];
-            if (!preg_match('/^([A-Za-z]:)?\\\\?/', $path, $matches)) {
-                // This should match, even if it matches 0 characters
-                throw new ConfigurationException("INTERNAL ERROR: This must be a regex problem.");
-            }
-            return $matches[0]; // The optional device letter followed by the optional '\\'
-        } else {
-            return ($path[0] == '/') ? '/' : '';
+        $devLetterPrefixPattern = '';
+        if (self::isWindows($dirSep)) {
+            $devLetterPrefixPattern = '([A-Za-z]:)?';
         }
+        $matches = [];
+        if (!preg_match('/^'.$devLetterPrefixPattern.preg_quote($dirSep, '/').'?/', $path, $matches)) {
+            // This should match, even if it matches 0 characters
+            throw new ConfigurationException("INTERNAL ERROR: This must be a regex problem.");
+        }
+        return $matches[0]; // The optional device letter followed by the optional $dirSep
     }
 
     /**
