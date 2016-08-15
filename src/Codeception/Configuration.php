@@ -556,13 +556,15 @@ class Configuration
             array_shift($relPathParts);
             array_shift($relProjDirParts);
         }
-        // prefix $relPath with '..' for all remaining unmatched $projDir
-        // subdirectories
-        $parentDirPrefixArr = array_fill(0, count($relProjDirParts), '..');
+        if (count($relProjDirParts) > 0) {
+            // prefix $relPath with '..' for all remaining unmatched $projDir
+            // subdirectories
+            $relPathParts = array_merge(array_fill(0, count($relProjDirParts), '..'), $relPathParts);
+        }
         // only append a trailing seperator if one is already present
         $trailingSep = preg_match('/'.preg_quote($dirSep, '/').'$/', $path) ? $dirSep : '';
         // convert array of dir paths back into a string path
-        return implode($dirSep, array_merge($parentDirPrefixArr, $relPathParts)).$trailingSep;
+        return implode($dirSep, $relPathParts).$trailingSep;
     }
 
     /**
