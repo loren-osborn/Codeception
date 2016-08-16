@@ -516,20 +516,15 @@ class Configuration
             return substr($path, strlen($projDir));
         }
         // Identify any absoluteness prefix (like '/' in Unix or "C:\\" in Windows)
-        $pathAbsPrefix    = self::getPathAbsolutenessPrefix($path,    $dirSep);
+        $pathAbsPrefix = self::getPathAbsolutenessPrefix($path, $dirSep);
         $projDirAbsPrefix = self::getPathAbsolutenessPrefix($projDir, $dirSep);
-        $sameAbsoluteness = (self::fsCaseStrCmp(
-            $pathAbsPrefix['wholePrefix'],
-            $projDirAbsPrefix['wholePrefix'],
-            $dirSep
-        ) == 0);
+        $sameAbsoluteness = (self::fsCaseStrCmp($pathAbsPrefix['wholePrefix'], $projDirAbsPrefix['wholePrefix'], $dirSep) == 0);
         if (!$sameAbsoluteness) {
             // if the $projDir and $path aren't relative to the same
             // thing, we can't make a relative path.
 
             // if we're relative to the same device ...
-            if (
-                strlen($pathAbsPrefix['devicePrefix']) &&
+            if (strlen($pathAbsPrefix['devicePrefix']) &&
                 (self::fsCaseStrCmp($pathAbsPrefix['devicePrefix'], $projDirAbsPrefix['devicePrefix'], $dirSep) == 0)
             ) {
                 // ... shave that off
@@ -540,17 +535,11 @@ class Configuration
         }
         // peel off optional absoluteness prefixes and convert
         // $path and $projDir to an subdirectory path array
-        $relPathParts = array_filter(
-            explode($dirSep, substr($path,    strlen($pathAbsPrefix['wholePrefix']))),
-            'strlen');
-        $relProjDirParts = array_filter(
-            explode($dirSep, substr($projDir, strlen($projDirAbsPrefix['wholePrefix']))),
-            'strlen');
+        $relPathParts = array_filter(explode($dirSep, substr($path, strlen($pathAbsPrefix['wholePrefix']))), 'strlen');
+        $relProjDirParts = array_filter(explode($dirSep, substr($projDir, strlen($projDirAbsPrefix['wholePrefix']))), 'strlen');
         // While there are any, peel off any common parent directories
         // from the beginning of the $projDir and $path
-        while (
-            (count($relPathParts)    > 0) &&
-            (count($relProjDirParts) > 0) &&
+        while ((count($relPathParts) > 0) && (count($relProjDirParts) > 0) &&
             (self::fsCaseStrCmp($relPathParts[0], $relProjDirParts[0], $dirSep) == 0)
         ) {
             array_shift($relPathParts);
